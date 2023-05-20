@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>POC to move round point in circle/ellipse</title>
+    <link href="https://fonts.googleapis.com/css?family=Raleway:400,600" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="app.css">
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>POC to move round point in circle/ellipse</h1>
+
+        <!-- slider app container -->
+        <div id="app"></div>
+    </div>
+
+    <script type="text/javascript" src="app.js"></script>
+
+    <script>
+        // slider app options
+        const opts = {
+            DOMselector: '#app',
+            sliders: [
+                {
+                    radius: 100,
+                    min: 0,
+                    max: 100,
+                    step: 10,
+                    initialValue: 50,
+                    color: '#fdcb6e',
+                    displayName: 'Value 1'
+                }
+            ]
+        };
+
+        // instantiate the slider
+        const slider = new EllipseCircle(opts);
+        slider.draw();
+    </script>
+</body>
+
+</html>

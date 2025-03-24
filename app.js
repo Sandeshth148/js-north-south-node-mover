@@ -23,7 +23,8 @@ class EllipseCircle {
         this.handleStrokeColor = '#888888';                         // EllipseCircle handle stroke color
         this.handleStrokeThickness = 3;                             // EllipseCircle handle stroke thickness    
         this.mouseDown = false;                                     // Is mouse down
-        this.activeSlider = null;                                   // Stores active (selected) slider
+        this.activeSlider = null; 
+        this.currentElement = null;                                  // Stores active (selected) slider
     }
 
     /**
@@ -48,12 +49,12 @@ class EllipseCircle {
         this.sliders.forEach((slider, index) => this.drawSingleSliderOnInit(svg, slider, index));
 
         // Event listeners
-        svgContainer.addEventListener('mousedown', this.mouseTouchStart.bind(this), false);
+       svgContainer.addEventListener('mousedown', this.mouseTouchStart.bind(this), false);
         // svgContainer.addEventListener('touchstart', this.mouseTouchStart.bind(this), false);
-        svgContainer.addEventListener('mousemove', this.mouseTouchMove.bind(this), false);
+       svgContainer.addEventListener('mousemove', this.mouseTouchMove.bind(this), false);
         // svgContainer.addEventListener('touchmove', this.mouseTouchMove.bind(this), false);
         window.addEventListener('mouseup', this.mouseTouchEnd.bind(this), false);
-        window.addEventListener('touchend', this.mouseTouchEnd.bind(this), false);
+        // window.addEventListener('touchend', this.mouseTouchEnd.bind(this), false);
     }
 
     /**
@@ -77,7 +78,7 @@ class EllipseCircle {
         // const circumference = slider.radius * this.tau;
 
         // Calculate initial angle
-        const initialAngle = Math.floor( ( slider.initialValue / (slider.max - slider.min) ) * 360 );
+        const initialAngle = 90;
 
         // Calculate spacing between arc fractions
         // const arcFractionSpacing = this.calculateSpacingBetweenArcFractions(circumference, this.arcFractionLength, this.arcFractionSpacing);
@@ -86,7 +87,7 @@ class EllipseCircle {
         const sliderGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         sliderGroup.setAttribute('class', 'sliderSingle');
         sliderGroup.setAttribute('data-slider', index);
-        sliderGroup.setAttribute('transform', 'rotate(-90,' + this.cx + ',' + this.cy + ')');
+        // sliderGroup.setAttribute('transform', 'rotate(-90,' + this.cx + ',' + this.cy + ')');
         sliderGroup.setAttribute('rad', slider.radius);
         svg.appendChild(sliderGroup);
         
@@ -99,7 +100,8 @@ class EllipseCircle {
         // Draw handle
         this.drawHandle(slider, initialAngle, sliderGroup, 'sliderHandle', this.cx, this.cy);
         // Draw handle
-        this.drawHandle(slider, initialAngle, sliderGroup, 'sliderHandle2' , this.cx, this.cy + this.cx);
+        this.drawHandle(slider, initialAngle + 180, sliderGroup, 'sliderHandle2' , this.cx, this.cy);
+        this.activeSlider = sliderGroup;
     }
 
     /**
@@ -161,11 +163,15 @@ class EllipseCircle {
         handle.setAttribute('class', className);
         handle.setAttribute('cx', handleCenter.x);
         handle.setAttribute('cy', handleCenter.y);
-        handle.setAttribute('r', 5);
+        handle.setAttribute('r', 6);
         handle.style.stroke = '#2B2D2E';
         handle.style.strokeWidth = 1;
         handle.style.fill = 'orange';
+        handle.style.cursor = 'nwse-resize';
         group.appendChild(handle);
+        handle.addEventListener('mousedown', this.mouseTouchStart.bind(this), false);
+        // handle.addEventListener('touchstart', this.mouseTouchStart.bind(this), false);
+        handle.addEventListener('mousemove', this.mouseTouchMove.bind(this), false);
         
     }
 
@@ -175,19 +181,43 @@ class EllipseCircle {
      * @param {element} activeSlider
      * @param {obj} rmc
      */
-    redrawActiveSlider(rmc) {
-        const activePath = this.activeSlider.querySelector('.sliderSinglePathActive');
+    redrawActiveSlider(rmc, e) {
+        // const activePath = this.activeSlider.querySelector('.sliderSinglePathActive');
         const radius = +this.activeSlider.getAttribute('rad');
         const currentAngle = this.calculateMouseAngle(rmc) * 0.999;
 
+        console.log('e', e, e.srcElement.classList.contains('sliderHandle'));
+        if(this.currentElement = 'sliderHandle'){
+            let handle = this.activeSlider.querySelector('.sliderHandle');
+            let handleCenter = this.calculateHandleCenter(currentAngle, radius , this.cx, this.cy);
+            handle.setAttribute('cx', handleCenter.x);
+            handle.setAttribute('cy', handleCenter.y);
+            handle = this.activeSlider.querySelector('.sliderHandle2');
+            // handleCenter = this.calculateHandleCenter(currentAngle, radius , this.cx, this.cy);
+            // console.log('t', currentAngle);
+            handle.setAttribute('cx', 400 - handleCenter.x);
+            handle.setAttribute('cy', 400 - handleCenter.y);
+        } else{
+            let handle = this.activeSlider.querySelector('.sliderHandle2');
+            let handleCenter = this.calculateHandleCenter(currentAngle, radius , this.cx, this.cy);
+            handle.setAttribute('cx', handleCenter.x);
+            handle.setAttribute('cy', handleCenter.y);
+            handle = this.activeSlider.querySelector('.sliderHandle');
+            // handleCenter = this.calculateHandleCenter(currentAngle + 180, radius , this.cx, this.cy);
+            // console.log('t', currentAngle);
+            handle.setAttribute('cx', 400 - handleCenter.x);
+            handle.setAttribute('cy', 400 - handleCenter.y);
+        }
+
         // Redraw active path
-        activePath.setAttribute('d', this.describeArc(this.cx, this.cy, radius, 0, this.radiansToDegrees(currentAngle)));
+        // activePath.setAttribute('d', this.describeArc(this.cx, this.cy, radius, 0, this.radiansToDegrees(currentAngle)));
 
         // Redraw handle
-        const handle = this.activeSlider.querySelector('.sliderHandle');
-        const handleCenter = this.calculateHandleCenter(currentAngle, radius , this.cx, this.cy);
-        handle.setAttribute('cx', handleCenter.x);
-        handle.setAttribute('cy', handleCenter.y);
+        // const handle = this.activeSlider.querySelector('.sliderHandle');
+        // const handleCenter = this.calculateHandleCenter(currentAngle, radius , this.cx, this.cy);
+        // // console.log('t', currentAngle);
+        // handle.setAttribute('cx', handleCenter.x);
+        // handle.setAttribute('cy', handleCenter.y);
 
         // Update legend
         // this.updateLegendUI(currentAngle);
@@ -201,9 +231,16 @@ class EllipseCircle {
     mouseTouchStart(e) {
         if (this.mouseDown) return;
         this.mouseDown = true;
-        const rmc = this.getRelativeMouseOrTouchCoordinates(e);
-        this.findClosestSlider(rmc);
-        this.redrawActiveSlider(rmc);
+
+        if(e.srcElement.classList.contains('sliderHandle')){
+            this.currentElement = 'sliderHandle';
+        } else{
+            this.currentElement = 'sliderHandle2';
+            
+        }
+        // const rmc = this.getRelativeMouseOrTouchCoordinates(e);
+        // this.findClosestSlider(rmc);
+        // this.redrawActiveSlider(rmc);
     }
 
     /**
@@ -213,9 +250,9 @@ class EllipseCircle {
      */
     mouseTouchMove(e) {
         if (!this.mouseDown) return;
-        e.preventDefault();
+        // e.preventDefault();
         const rmc = this.getRelativeMouseOrTouchCoordinates(e);
-        this.redrawActiveSlider(rmc);
+        this.redrawActiveSlider(rmc, e);
     }
 
     /**
@@ -226,80 +263,80 @@ class EllipseCircle {
     mouseTouchEnd() {
         if (!this.mouseDown) return;
         this.mouseDown = false;
-        this.activeSlider = null;
+        // this.activeSlider = null;
     }
 
-    /**
-     * Calculate number of arc fractions and space between them
-     * 
-     * @param {number} circumference 
-     * @param {number} arcBgFractionLength 
-     * @param {number} arcBgFractionBetweenSpacing 
-     * 
-     * @returns {number} arcFractionSpacing
-     */
-    calculateSpacingBetweenArcFractions(circumference, arcBgFractionLength, arcBgFractionBetweenSpacing) {
-        const numFractions = Math.floor((circumference / arcBgFractionLength) * arcBgFractionBetweenSpacing);
-        const totalSpacing = circumference - numFractions * arcBgFractionLength;
-        return totalSpacing / numFractions;
-    }
+    // /**
+    //  * Calculate number of arc fractions and space between them
+    //  * 
+    //  * @param {number} circumference 
+    //  * @param {number} arcBgFractionLength 
+    //  * @param {number} arcBgFractionBetweenSpacing 
+    //  * 
+    //  * @returns {number} arcFractionSpacing
+    //  */
+    // calculateSpacingBetweenArcFractions(circumference, arcBgFractionLength, arcBgFractionBetweenSpacing) {
+    //     const numFractions = Math.floor((circumference / arcBgFractionLength) * arcBgFractionBetweenSpacing);
+    //     const totalSpacing = circumference - numFractions * arcBgFractionLength;
+    //     return totalSpacing / numFractions;
+    // }
 
-    /**
-     * Helper functiom - describe arc
-     * 
-     * @param {number} x 
-     * @param {number} y 
-     * @param {number} radius 
-     * @param {number} startAngle 
-     * @param {number} endAngle 
-     * 
-     * @returns {string} path
-     */
-    describeArc (x, y, radius, startAngle, endAngle) {
-        let path,
-            endAngleOriginal = endAngle, 
-            start, 
-            end, 
-            arcSweep;
+    // /**
+    //  * Helper functiom - describe arc
+    //  * 
+    //  * @param {number} x 
+    //  * @param {number} y 
+    //  * @param {number} radius 
+    //  * @param {number} startAngle 
+    //  * @param {number} endAngle 
+    //  * 
+    //  * @returns {string} path
+    //  */
+    // describeArc (x, y, radius, startAngle, endAngle) {
+    //     let path,
+    //         endAngleOriginal = endAngle, 
+    //         start, 
+    //         end, 
+    //         arcSweep;
 
-        if(endAngleOriginal - startAngle === 360)
-        {
-            endAngle = 359;
-        }
+    //     if(endAngleOriginal - startAngle === 360)
+    //     {
+    //         endAngle = 359;
+    //     }
 
-        start = this.polarToCartesian(x, y, radius, endAngle);
-        end = this.polarToCartesian(x, y, radius, startAngle);
-        arcSweep = endAngle - startAngle <= 180 ? '0' : '1';
+    //     start = this.polarToCartesian(x, y, radius, endAngle);
+    //     end = this.polarToCartesian(x, y, radius, startAngle);
+    //     arcSweep = endAngle - startAngle <= 180 ? '0' : '1';
 
-        path = [
-            'M', start.x, start.y,
-            'A', radius, radius, 0, arcSweep, 0, end.x, end.y
-        ];
+    //     path = [
+    //         'M', start.x, start.y,
+    //         'A', radius, radius, 0, arcSweep, 0, end.x, end.y
+    //     ];
 
-        if (endAngleOriginal - startAngle === 360) 
-        {
-            path.push('z');
-        } 
+    //     if (endAngleOriginal - startAngle === 360) 
+    //     {
+    //         path.push('z');
+    //     } 
 
-        return path.join(' ');
-    }
+    //     return path.join(' ');
+    // }
 
-    /**
-     * Helper function - polar to cartesian transformation
-     * 
-     * @param {number} centerX 
-     * @param {number} centerY 
-     * @param {number} radius 
-     * @param {number} angleInDegrees 
-     * 
-     * @returns {object} coords
-     */
-     polarToCartesian (centerX, centerY, radius, angleInDegrees) {
-        const angleInRadians = angleInDegrees * Math.PI / 180;
-        const x = centerX + (radius * Math.cos(angleInRadians));
-        const y = centerY + (radius * Math.sin(angleInRadians));
-        return { x, y };
-    }
+    // /**
+    //  * Helper function - polar to cartesian transformation
+    //  * 
+    //  * @param {number} centerX 
+    //  * @param {number} centerY 
+    //  * @param {number} radius 
+    //  * @param {number} angleInDegrees 
+    //  * 
+    //  * @returns {object} coords
+    //  */
+    //  polarToCartesian (centerX, centerY, radius, angleInDegrees) {
+    //     const angleInRadians = angleInDegrees * Math.PI / 180;
+    //     const x = centerX + (radius * Math.cos(angleInRadians));
+    //     const y = centerY + (radius * Math.sin(angleInRadians));
+    //     return { x, y };
+    // }
 
     /**
      * Helper function - calculate handle center
@@ -345,7 +382,7 @@ class EllipseCircle {
         // Get Relative Position
         x = clientPosX - containerRect.left;
         y = clientPosY - containerRect.top;
-
+        // console.log('clientPosX,clientPosY',clientPosX,clientPosY,e,x, y);
         return { x, y };
     }
 
@@ -359,26 +396,27 @@ class EllipseCircle {
     calculateMouseAngle(rmc) {
         const angle = Math.atan2(rmc.y - this.cy, rmc.x - this.cx);
 
-        if (angle > - this.tau / 2 && angle < - this.tau / 4) 
-        {
-            return angle + this.tau * 1.25;
-        } 
-        else 
-        {
-            return angle + this.tau * 0.25;
-        }
+        // if (angle > - this.tau / 2 && angle < - this.tau / 4) 
+        // {
+        //     return angle + this.tau * 1.25;
+        // } 
+        // else 
+        // {
+        //     return angle + this.tau * 0.25;
+        // }
+        return angle;
     }
 
-    /**
-     * Helper function - transform radians to degrees
-     * 
-     * @param {number} angle 
-     * 
-     * @returns {number} angle
-     */
-    radiansToDegrees(angle) {
-        return angle / (Math.PI / 180);
-    }
+    // /**
+    //  * Helper function - transform radians to degrees
+    //  * 
+    //  * @param {number} angle 
+    //  * 
+    //  * @returns {number} angle
+    //  */
+    // radiansToDegrees(angle) {
+    //     return angle / (Math.PI / 180);
+    // }
 
     /**
      * Find closest slider to mouse pointer
@@ -386,21 +424,22 @@ class EllipseCircle {
      * 
      * @param {object} rmc
      */
-    findClosestSlider(rmc) {
-        const mouseDistanceFromCenter = Math.hypot(rmc.x - this.cx, rmc.y - this.cy);
-        const container = document.querySelector('.svg_container');
-        const sliderGroups = Array.from(container.querySelectorAll('g'));
+    // findClosestSlider(rmc) {
+    //     const mouseDistanceFromCenter = Math.hypot(rmc.x - this.cx, rmc.y - this.cy);
+    //     const container = document.querySelector('.svg_container');
+    //     const sliderGroups = Array.from(container.querySelectorAll('g'));
 
-        // Get distances from client coordinates to each slider
-        const distances = sliderGroups.map(slider => {
-            const rad = parseInt(slider.getAttribute('rad'));
-            return Math.min( Math.abs(mouseDistanceFromCenter - rad) );
-        });
+    //     // Get distances from client coordinates to each slider
+    //     const distances = sliderGroups.map(slider => {
+    //         const rad = parseInt(slider.getAttribute('rad'));
+    //         return Math.min( Math.abs(mouseDistanceFromCenter - rad) );
+    //     });
 
-        // Find closest slider
-        const closestSliderIndex = distances.indexOf(Math.min(...distances));
-        this.activeSlider = sliderGroups[closestSliderIndex];
-    }
+    //     // Find closest slider
+    //     const closestSliderIndex = distances.indexOf(Math.min(...distances));
+    //     this.activeSlider = sliderGroups[closestSliderIndex];
+    //     console.log(this.activeSlider);
+    // }
 }
 
   
